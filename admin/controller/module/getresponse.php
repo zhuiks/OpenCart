@@ -37,6 +37,7 @@ class ControllerModuleGetresponse extends Controller
 		if (!empty($this->gr_apikey)) {
 			$data = $this->assignAutoresponders($data);
 			$data = $this->assignForms($data);
+			$data = $this->assignAccounts($data);
 			$data['campaigns'] = $this->getCampaigns();
 		}
 
@@ -152,17 +153,28 @@ class ControllerModuleGetresponse extends Controller
 		$data['button_save'] = $this->language->get('button_save');
 		$data['button_cancel'] = $this->language->get('button_cancel');
 		$data['button_export'] = $this->language->get('button_export');
+		$data['button_connect'] = $this->language->get('button_connect');
+		$data['button_disconnect'] = $this->language->get('button_disconnect');
+		$data['button_stay'] = $this->language->get('button_stay');
 		$data['apikey_info'] = $this->language->get('apikey_info');
 		$data['export_info'] = $this->language->get('export_info');
+		$data['text_export_success'] = $this->language->get('text_export_success');
 		$data['register_info'] = $this->language->get('register_info');
 		$data['webform_info'] = $this->language->get('webform_info');
+		$data['disconnect_info'] = $this->language->get('disconnect_info');
+		$data['text_disconnect'] = $this->language->get('text_disconnect');
+		$data['text_connect'] = $this->language->get('text_connect');
 		$data['apikey_title'] = $this->language->get('apikey_title');
 		$data['export_title'] = $this->language->get('export_title');
 		$data['register_title'] = $this->language->get('register_title');
 		$data['webform_title'] = $this->language->get('webform_title');
+		$data['disconnect_title'] = $this->language->get('disconnect_title');
 		$data['label_active'] = $this->language->get('label_active');
+		$data['label_active_register'] = $this->language->get('label_active_register');
+		$data['label_active_forms'] = $this->language->get('label_active_forms');
 		$data['label_form'] = $this->language->get('label_form');
 		$data['label_campaign'] = $this->language->get('label_campaign');
+		$data['entry_campaign_description'] = $this->language->get('entry_campaign_description');
 		$data['label_day_of_cycle'] = $this->language->get('label_day_of_cycle');
 		$data['label_auto_queue'] = $this->language->get('label_auto_queue');
 		$data['label_yes'] = $this->language->get('label_yes');
@@ -170,9 +182,11 @@ class ControllerModuleGetresponse extends Controller
 		$data['label_none'] = $this->language->get('label_none');
 		$data['label_new_forms'] = $this->language->get('label_new_forms');
 		$data['label_old_forms'] = $this->language->get('label_old_forms');
+		$data['label_export_info'] = $this->language->get('label_export_info');
+		$data['label_register_info'] = $this->language->get('label_register_info');
+		$data['label_webform_info'] = $this->language->get('label_webform_info');
 		$data['info_loading'] = $this->language->get('info_loading');
 		$data['info_ajax_error'] = $this->language->get('info_ajax_error');
-
 		return $data;
 	}
 
@@ -186,11 +200,7 @@ class ControllerModuleGetresponse extends Controller
 
 		$data['modules'] = $this->config->get('getresponse_module');
 
-		if ($this->config->get('getresponse_form')) {
-			$data['getresponse_form'] = $this->config->get('getresponse_form');
-		} else {
-			$data['getresponse_form'] = array('id' => 0, 'url' => '' , 'active' => 0);
-		}
+		$data['getresponse_form'] = $this->getGetresponseForm();
 
 		if ($this->config->get('getresponse_reg')) {
 			$data['getresponse_reg'] = $this->config->get('getresponse_reg');
@@ -217,20 +227,55 @@ class ControllerModuleGetresponse extends Controller
 	}
 
 	/**
+	 * @return array
+	 */
+	private function getGetresponseForm()
+	{
+		$getresponseForm = $this->config->get('getresponse_form');
+
+		if (!is_array($getresponseForm) || !isset($getresponseForm['id'])) {
+			return ['id' => 0, 'url' => '', 'active' => 0];
+		}
+		if (!isset($getresponseForm['active'])) {
+			$getresponseForm['active'] = 0;
+		}
+		return $getresponseForm;
+	}
+
+	private function assignAccounts($data)
+	{
+		$accounts = $this->get_response->accounts();
+		$data['getresponse_accounts']['name'] = $accounts->firstName . " " . $accounts->lastName;
+		$data['getresponse_accounts']['email'] = (isset($accounts->email)) ? $accounts->email : '';
+		$data['getresponse_accounts']['street'] = (isset($accounts->street)) ? $accounts->street : '';
+		$data['getresponse_accounts']['zipCode'] = (isset($accounts->zipCode)) ? $accounts->zipCode : '';
+		$data['getresponse_accounts']['city'] = (isset($accounts->city)) ? $accounts->city : '';
+		$data['getresponse_accounts']['state'] = (isset($accounts->state)) ? $accounts->state : '';
+		$countryCode = $accounts->countryCode;
+		$data['getresponse_accounts']['countryCode'] = (isset($countryCode->countryCode)) ? $countryCode->countryCode : '';
+		return $data;
+	}
+
+	/**
 	 * Module settings to read and/or write config
 	 */
 	private function saveSettings($data) {
 		$this->load->model('setting/setting');
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
-			if (!$this->checkApiKey($this->request->post['getresponse_apikey'])) {
+			$request = $this->request->post;
+
+			if (!$this->checkApiKey($request['getresponse_apikey'])) {
 				$this->session->data['error_warning'] = $this->language->get('error_incorrect_apikey');
+			} elseif (1 == $request['getresponse_disconnect']) {
+				$this->model_setting_setting->editSetting('getresponse', []);
+				$this->session->data['success'] = $this->language->get('text_disconnect');
 			} else {
-				$this->model_setting_setting->editSetting('getresponse', $this->request->post);
-				$this->session->data['success'] = $this->language->get('text_success');
+				$this->model_setting_setting->editSetting('getresponse', $request);
+				$this->session->data['success'] = (2 == $request['getresponse_disconnect']) ? $this->language->get('text_connect') : $this->language->get('text_success');
+				unset($request['getresponse_disconnect']);
 			}
 
-			$this->session->data['active_tab'] = $this->request->post['getresponse_form']['current_tab'];
-
+			$this->session->data['active_tab'] = $request['getresponse_form']['current_tab'];
 			$this->response->redirect(
 					$this->url->link(
 							'module/getresponse', 'token=' . $this->session->data['token'],
@@ -313,7 +358,11 @@ class ControllerModuleGetresponse extends Controller
 						array('query' => array('campaignId' => $gr_campaign->campaignId, 'email' => $row['email']))
 				);
 
-				$cycle_day = (!empty($grContact) && !empty($grContact->dayOfCycle)) ? $grContact->dayOfCycle : 0;
+				if (isset($this->request->post['cycle_days'])) {
+					$cycle_day = $this->request->post['cycle_days'];
+				} else {
+					$cycle_day = (!empty($grContact) && !empty($grContact->dayOfCycle)) ? $grContact->dayOfCycle : 0;
+				}
 
 				$params = array(
 						'name' => $row['firstname'] . ' ' . $row['lastname'],
@@ -326,7 +375,6 @@ class ControllerModuleGetresponse extends Controller
 
 				try {
 					$r = $this->get_response->addContact($params);
-
 					if (is_object($r) && empty($r)) {
 						$queued++;
 					} elseif (is_object($r) && $r->code == 1008) {
