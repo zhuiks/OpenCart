@@ -369,9 +369,12 @@ class ControllerModuleGetresponse extends Controller
 						'email' => $row['email'],
 						'dayOfCycle' => $cycle_day,
 						'campaign' => array('campaignId' => $gr_campaign->campaignId),
-						'customFieldValues' => $customs,
-						'ipAddress' => $row['ip']
+						'customFieldValues' => $customs
 				);
+
+				if (!empty($row['ip'])) {
+					$params['ipAddress'] = $row['ip'];
+				}
 
 				try {
 					$r = $this->get_response->addContact($params);
@@ -482,9 +485,12 @@ class ControllerModuleGetresponse extends Controller
 				'name' => $customer['firstname'] . ' ' . $customer['lastname'],
 				'email' => $customer['email'],
 				'campaign' => array('campaignId' => $settings['campaign']),
-				'customFieldValues' => $customs,
-				'ipAddress' => $customer['ip']
+				'customFieldValues' => $customs
 		);
+
+		if (!empty($row['ip'])) {
+			$params['ipAddress'] = $row['ip'];
+		}
 
 		if (isset($settings['sequence_active']) && $settings['sequence_active'] == 1 && isset($settings['day'])) {
 			$params['dayOfCycle'] = (int)$settings['day'];
