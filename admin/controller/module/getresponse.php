@@ -345,7 +345,7 @@ class ControllerModuleGetresponse extends Controller
 
 			foreach ($contacts as $row) {
 				$customs = array();
-				$customs[] = array('customFieldId' => $this->getCustomFieldId('ref'), 'value' => array('OpenCart'));
+				$customs[] = array('customFieldId' => $this->getCustomFieldId('origin'), 'value' => array('opencart'));
 
 				foreach ($this->allow_fields as $af) {
 					$custom_field_id = $this->getCustomFieldId($af);
@@ -473,7 +473,7 @@ class ControllerModuleGetresponse extends Controller
 		}
 
 		$customs = array();
-		$customs[] = array('customFieldId' => $this->getCustomFieldId('ref'), 'value' => array('OpenCart'));
+		$customs[] = array('customFieldId' => $this->getCustomFieldId('origin'), 'value' => array('opencart'));
 
 		foreach ($this->allow_fields as $af) {
 			if (!empty($row[$af])) {
