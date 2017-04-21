@@ -1,6 +1,6 @@
 <?php
 
-class ControllerModuleGetresponse extends Controller
+class ControllerExtensionModuleGetresponse extends Controller
 {
 	private $allow_fields = array('telephone', 'country', 'city', 'address', 'postcode');
 	private $custom_fields;
@@ -15,19 +15,19 @@ class ControllerModuleGetresponse extends Controller
 		$data = array();
 		$data['form_url'] = $form['url'];
 
-		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/module/getresponse.tpl')) {
-			return $this->load->view($this->config->get('config_template') . '/template/module/getresponse.tpl', $data);
+		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/extension/module/getresponse')) {
+			return $this->load->view($this->config->get('config_template') . '/template/extension/module/getresponse', $data);
 		}
 
-		return $this->load->view('default/template/module/getresponse.tpl', $data);
+		return $this->load->view('extension/module/getresponse', $data);
 	}
 
-	public function on_customer_add($customer_id) {
+	public function on_customer_add($route, $output, $customer_id) {
+
 		$this->load->model('account/customer');
 		$customer = $this->model_account_customer->getCustomer($customer_id);
 		$settings = $this->config->get('getresponse_reg');
 		$apikey = $this->config->get('getresponse_apikey');
-
 
 		if ($settings['active'] == 0 || $customer['newsletter'] == 0) {
 			return true;
@@ -35,7 +35,7 @@ class ControllerModuleGetresponse extends Controller
 
 		$get_response = new GetResponseApiV3($apikey);
 		$customs = array();
-		$customs[] = array('customFieldId' => $this->getCustomFieldId('ref'), 'value' => array('OpenCart'));
+		$customs[] = array('customFieldId' => $this->getCustomFieldId('origin'), 'value' => array('OpenCart'));
 
 		foreach ($this->allow_fields as $af) {
 			if (!empty($row[$af])) {
@@ -48,7 +48,7 @@ class ControllerModuleGetresponse extends Controller
 				'email' => $customer['email'],
 				'campaign' => array('campaignId' => $settings['campaign']),
 				'customFieldValues' => $customs,
-				'ipAddress' => $customer['ip']
+				'ipAddress' => empty($customer['ip']) ? '127.0.0.1' : $customer['ip']
 		);
 
 		if (isset($settings['sequence_active']) && $settings['sequence_active'] == 1 && isset($settings['day'])) {
@@ -56,7 +56,6 @@ class ControllerModuleGetresponse extends Controller
 		}
 
 		$get_response->addContact($params);
-
 		return true;
 	}
 

@@ -1,2 +1,1 @@
-# GetResponse OpenCart Integration
-GetResponse OpenCart plugin. For more information, please visit our dedicated [OpenCart integration web page](http://connect.getresponse.com/integration/opencart-plugin).
+#GetResponse plugin for OpenCart store (version 2.3.0.2)
