@@ -1,6 +1,6 @@
 <?php
 
-class ModelModuleGetresponse extends Model
+class ModelExtensionModuleGetresponse extends Model
 {
 	public function getContacts()
 	{

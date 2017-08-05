@@ -1,6 +1,6 @@
 <?php
 
-class ControllerModuleGetresponse extends Controller
+class ControllerExtensionModuleGetresponse extends Controller
 {
 
 	private $error = array();
@@ -15,7 +15,7 @@ class ControllerModuleGetresponse extends Controller
 	{
 		parent::__construct($registry);
 
-		$this->gr_apikey = $this->config->get('getresponse_apikey');
+		$this->gr_apikey = $this->config->get('module_getresponse_apikey');
 
 		if (!empty($this->gr_apikey)) {
 			$this->get_response = new GetResponseApiV3($this->gr_apikey);
@@ -23,7 +23,7 @@ class ControllerModuleGetresponse extends Controller
 	}
 
 	public function index() {
-		$this->load->language('module/getresponse');
+		$this->load->language('extension/module/getresponse');
 		$this->load->model('localisation/language');
 		$this->load->model('design/layout');
 		$this->document->setTitle($this->language->get('heading_title'));
@@ -42,14 +42,14 @@ class ControllerModuleGetresponse extends Controller
 		}
 
 		$data['layouts'] = $this->model_design_layout->getLayouts();
-		$data['action'] = $this->url->link('module/getresponse', 'token=' . $this->session->data['token'], 'SSL');
-		$data['cancel'] = $this->url->link('extension/module', 'token=' . $this->session->data['token'], 'SSL');
+		$data['action'] = $this->url->link('extension/module/getresponse', 'user_token=' . $this->session->data['user_token'], true);
+		$data['cancel'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'], true);
 		$data['languages'] = $this->model_localisation_language->getLanguages();
 		$data['header'] = $this->load->controller('common/header');
 		$data['column_left'] = $this->load->controller('common/column_left');
 		$data['footer'] = $this->load->controller('common/footer');
 
-		$this->response->setOutput($this->load->view('module/getresponse.tpl', $data));
+		$this->response->setOutput($this->load->view('extension/module/getresponse', $data));
 	}
 
 	private function assignAutoresponders($data) {
@@ -116,17 +116,17 @@ class ControllerModuleGetresponse extends Controller
 		$data['breadcrumbs'] = array();
 		$data['breadcrumbs'][] = array(
 				'text' => $this->language->get('text_home'),
-				'href' => $this->url->link('common/home', 'token=' . $this->session->data['token'], 'SSL'),
+				'href' => $this->url->link('common/home', 'token=' . $this->session->data['user_token'], 'SSL'),
 				'separator' => false
 		);
 		$data['breadcrumbs'][] = array(
 				'text' => $this->language->get('text_module'),
-				'href' => $this->url->link('extension/module', 'token=' . $this->session->data['token'], 'SSL'),
+				'href' => $this->url->link('extension/module', 'token=' . $this->session->data['user_token'], 'SSL'),
 				'separator' => ' :: '
 		);
 		$data['breadcrumbs'][] = array(
 				'text' => $this->language->get('heading_title'),
-				'href' => $this->url->link('module/getresponse', 'token=' . $this->session->data['token'], 'SSL'),
+				'href' => $this->url->link('extension/module/getresponse', 'token=' . $this->session->data['user_token'], 'SSL'),
 				'separator' => ' :: '
 		);
 
@@ -195,17 +195,17 @@ class ControllerModuleGetresponse extends Controller
 	 * @return array
 	 */
 	private function assignSettings($data) {
-		$this->enable_module = $this->config->get('getresponse_enable_module');
-		$this->campaign = $this->config->get('getresponse_campaign');
+		$this->enable_module = $this->config->get('module_getresponse_enable_module');
+		$this->campaign = $this->config->get('module_getresponse_campaign');
 
-		$data['modules'] = $this->config->get('getresponse_module');
+		$data['modules'] = $this->config->get('module_getresponse_module');
 
-		$data['getresponse_form'] = $this->getGetresponseForm();
+		$data['module_getresponse_form'] = $this->getGetresponseForm();
 
-		if ($this->config->get('getresponse_reg')) {
-			$data['getresponse_reg'] = $this->config->get('getresponse_reg');
+		if ($this->config->get('module_getresponse_reg')) {
+			$data['module_getresponse_reg'] = $this->config->get('module_getresponse_reg');
 		} else {
-			$data['getresponse_reg'] = array('campaign' => '', 'day' => '', 'sequence_active' => 0);
+			$data['module_getresponse_reg'] = array('campaign' => '', 'day' => '', 'sequence_active' => 0);
 		}
 
 		if (isset($this->session->data['success'])) {
@@ -218,10 +218,10 @@ class ControllerModuleGetresponse extends Controller
 			unset($this->session->data['error_warning']);
 		}
 
-		$data['token'] = $this->session->data['token'];
+		$data['user_token'] = $this->session->data['user_token'];
 		$data['active_tab'] = isset($this->session->data['active_tab']) ? $this->session->data['active_tab'] : 'home';
-		$data['getresponse_apikey'] = $this->gr_apikey;
-		$data['getresponse_campaign'] = $this->campaign;
+		$data['module_getresponse_apikey'] = $this->gr_apikey;
+		$data['module_getresponse_campaign'] = $this->campaign;
 
 		return $data;
 	}
@@ -231,7 +231,7 @@ class ControllerModuleGetresponse extends Controller
 	 */
 	private function getGetresponseForm()
 	{
-		$getresponseForm = $this->config->get('getresponse_form');
+		$getresponseForm = $this->config->get('module_getresponse_form');
 
 		if (!is_array($getresponseForm) || !isset($getresponseForm['id'])) {
 			return ['id' => 0, 'url' => '', 'active' => 0];
@@ -264,22 +264,27 @@ class ControllerModuleGetresponse extends Controller
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
 			$request = $this->request->post;
 
-			if (!$this->checkApiKey($request['getresponse_apikey'])) {
+			if (!$this->checkApiKey($request['module_getresponse_apikey'])) {
 				$this->session->data['error_warning'] = $this->language->get('error_incorrect_apikey');
-			} elseif (1 == $request['getresponse_disconnect']) {
-				$this->model_setting_setting->editSetting('getresponse', []);
+			} elseif (1 == $request['module_getresponse_disconnect']) {
+				$this->model_setting_setting->editSetting('module_getresponse', []);
 				$this->session->data['success'] = $this->language->get('text_disconnect');
 			} else {
-				$this->model_setting_setting->editSetting('getresponse', $request);
-				$this->session->data['success'] = (2 == $request['getresponse_disconnect']) ? $this->language->get('text_connect') : $this->language->get('text_success');
-				unset($request['getresponse_disconnect']);
+				if($request['module_getresponse_form']['active']) {
+					$request['module_getresponse_status'] = 1;
+				} else {
+					$request['module_getresponse_status'] = 0;
+				}
+				$this->model_setting_setting->editSetting('module_getresponse', $request);
+				$this->session->data['success'] = (2 == $request['module_getresponse_disconnect']) ? $this->language->get('text_connect') : $this->language->get('text_success');
+				unset($request['module_getresponse_disconnect']);
 			}
 
-			$this->session->data['active_tab'] = $request['getresponse_form']['current_tab'];
+			$this->session->data['active_tab'] = $request['module_getresponse_form']['current_tab'];
 			$this->response->redirect(
 					$this->url->link(
-							'module/getresponse', 'token=' . $this->session->data['token'],
-							'SSL'
+							'extension/module/getresponse', 'user_token=' . $this->session->data['user_token'],
+							true
 					)
 			);
 		}
@@ -294,7 +299,7 @@ class ControllerModuleGetresponse extends Controller
 	private function checkApiKey($apikey) {
 		if (empty($apikey)) {
 			return false;
-		} elseif ($this->config->get('getresponse_apikey') == $apikey) {
+		} elseif ($this->config->get('module_getresponse_apikey') == $apikey) {
 			return true;
 		}
 
@@ -310,7 +315,7 @@ class ControllerModuleGetresponse extends Controller
 	 * @return bool
 	 */
 	private function validate() {
-		if (!$this->user->hasPermission('modify', 'module/getresponse')) {
+		if (!$this->user->hasPermission('modify', 'extension/module/getresponse')) {
 			$this->session->data['error_warning'] = $this->language->get('error_permission');
 		}
 
@@ -321,8 +326,8 @@ class ControllerModuleGetresponse extends Controller
 	 * Export contacts to campaign
 	 */
 	public function export() {
-		$this->load->model('module/getresponse');
-		$contacts = $this->model_module_getresponse->getContacts();
+		$this->load->model('extension/module/getresponse');
+		$contacts = $this->model_extension_module_getresponse->getContacts();
 		$this->campaign = $this->request->post['campaign'];
 		$gr_campaign = array();
 		$campaigns = $this->getCampaigns();
@@ -454,19 +459,19 @@ class ControllerModuleGetresponse extends Controller
 	}
 
 	public function install() {
-		$this->load->model('extension/event');
-		$this->model_extension_event->addEvent('getresponse', 'post.customer.add', 'module/getresponse/on_customer_add');
+		$this->load->model('setting/event');
+		$this->model_setting_event->addEvent('getresponse', 'catalog/model/account/customer/addCustomer/after', 'extension/module/getresponse/on_customer_add');
 	}
 
 	public function uninstall() {
-		$this->load->model('extension/event');
-		$this->model_extension_event->deleteEvent('Getresponse');
+		$this->load->model('setting/event');
+		$this->model_setting_event->deleteEvent('getresponse');
 	}
 
 	public function on_customer_add($customer_id) {
 		$this->load->model('sale/customer');
 		$customer = $this->model_sale_customer->getCustomer($customer_id);
-		$settings = $this->config->get('getresponse_reg');
+		$settings = $this->config->get('module_getresponse_reg');
 
 		if ($settings['sequence_active'] == 0 || $customer['newsletter'] == 0) {
 			return true;

@@ -1,12 +1,12 @@
 <?php
 
-class ControllerModuleGetresponse extends Controller
+class ControllerExtensionModuleGetresponse extends Controller
 {
 	private $allow_fields = array('telephone', 'country', 'city', 'address', 'postcode');
 	private $custom_fields;
 
 	public function index() {
-		$form = $this->config->get('getresponse_form');
+		$form = $this->config->get('module_getresponse_form');
 
 		if (!isset($form['active']) || $form['active'] == 0 || strlen($form['url']) < 15) {
 			return false;
@@ -15,22 +15,17 @@ class ControllerModuleGetresponse extends Controller
 		$data = array();
 		$data['form_url'] = $form['url'];
 
-		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/module/getresponse.tpl')) {
-			return $this->load->view($this->config->get('config_template') . '/template/module/getresponse.tpl', $data);
-		}
-
-		return $this->load->view('default/template/module/getresponse.tpl', $data);
+		return $this->load->view('extension/module/getresponse', $data);
 	}
 
-	public function on_customer_add($customer_id) {
-		$this->load->model('account/customer');
-		$customer = $this->model_account_customer->getCustomer($customer_id);
-		$settings = $this->config->get('getresponse_reg');
-		$apikey = $this->config->get('getresponse_apikey');
+	public function on_customer_add($route, $data, $customer_id) {
+		$customer = $data[0];
+		$settings = $this->config->get('module_getresponse_reg');
+		$apikey = $this->config->get('module_getresponse_apikey');
 
 
 		if ($settings['active'] == 0 || $customer['newsletter'] == 0) {
-			return true;
+			return $customer_id;
 		}
 
 		$get_response = new GetResponseApiV3($apikey);
@@ -48,7 +43,7 @@ class ControllerModuleGetresponse extends Controller
 				'email' => $customer['email'],
 				'campaign' => array('campaignId' => $settings['campaign']),
 				'customFieldValues' => $customs,
-				'ipAddress' => $customer['ip']
+				//'ipAddress' => $customer['ip']
 		);
 
 		if (isset($settings['sequence_active']) && $settings['sequence_active'] == 1 && isset($settings['day'])) {
@@ -57,11 +52,11 @@ class ControllerModuleGetresponse extends Controller
 
 		$get_response->addContact($params);
 
-		return true;
+		return $customer_id;
 	}
 
 	private function getCustomFieldId($name) {
-		$apikey = $this->config->get('getresponse_apikey');
+		$apikey = $this->config->get('module_getresponse_apikey');
 		$get_response = new GetResponseApiV3($apikey);
 
 		if (empty($this->custom_fields)) {
