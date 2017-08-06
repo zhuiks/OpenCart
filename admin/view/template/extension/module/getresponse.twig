@@ -304,7 +304,7 @@
             'cycle_days': cycle_days
         },
         success: function (data) {
-          $('.gr-info').html('<div class="alert alert-success">{{ text_export_success }}</div>');
+          $('.gr-info').html('<div class="alert alert-success">'+(data.response?data.response:"{{ text_export_success }}")+'</div>');
         },
         error: function (response) {
           $('.gr-info').html(' <div class="alert alert-danger">{{ info_ajax_error }}</div>');

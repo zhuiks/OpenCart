@@ -38,7 +38,7 @@ class ControllerExtensionModuleGetresponse extends Controller
 			$data = $this->assignAutoresponders($data);
 			$data = $this->assignForms($data);
 			$data = $this->assignAccounts($data);
-			$data['campaigns'] = $this->getCampaigns();
+			$data['campaigns'] = (array) $this->getCampaigns();
 		}
 
 		$data['layouts'] = $this->model_design_layout->getLayouts();
@@ -62,7 +62,7 @@ class ControllerExtensionModuleGetresponse extends Controller
 			return $data;
 		}
 
-		if (!empty($autoresponders) && is_object($autoresponders)) {
+		if (is_object($autoresponders) && !empty((array)$autoresponders)) {
 			foreach ($autoresponders as $autoresponder) {
 				if ($autoresponder->triggerSettings->dayOfCycle == null) {
 					continue;
@@ -219,7 +219,7 @@ class ControllerExtensionModuleGetresponse extends Controller
 		}
 
 		$data['user_token'] = $this->session->data['user_token'];
-		$data['active_tab'] = isset($this->session->data['active_tab']) ? $this->session->data['active_tab'] : 'home';
+		$data['active_tab'] = isset($this->session->data['active_tab']) && $this->gr_apikey ? $this->session->data['active_tab'] : 'home';
 		$data['module_getresponse_apikey'] = $this->gr_apikey;
 		$data['module_getresponse_campaign'] = $this->campaign;
 
@@ -333,7 +333,7 @@ class ControllerExtensionModuleGetresponse extends Controller
 		$campaigns = $this->getCampaigns();
 
 		if (!empty($campaigns)) {
-			foreach ($campaigns as $campaign) {
+			foreach ((array)$campaigns as $campaign) {
 				if ($campaign->campaignId === $this->campaign) {
 					$gr_campaign = $campaign;
 				}
@@ -383,7 +383,7 @@ class ControllerExtensionModuleGetresponse extends Controller
 
 				try {
 					$r = $this->get_response->addContact($params);
-					if (is_object($r) && empty($r)) {
+					if (is_object($r) && empty((array)$r)) {
 						$queued++;
 					} elseif (is_object($r) && $r->code == 1008) {
 						$duplicated++;
@@ -461,20 +461,20 @@ class ControllerExtensionModuleGetresponse extends Controller
 	public function install() {
 		$this->load->model('setting/event');
 		$this->model_setting_event->addEvent('getresponse', 'catalog/model/account/customer/addCustomer/after', 'extension/module/getresponse/on_customer_add');
+		$this->model_setting_event->addEvent('getresponse', 'admin/model/customer/customer/addCustomer/after', 'extension/module/getresponse/on_customer_add');
 	}
 
 	public function uninstall() {
 		$this->load->model('setting/event');
-		$this->model_setting_event->deleteEvent('getresponse');
+		$this->model_setting_event->deleteEventByCode('getresponse');
 	}
 
-	public function on_customer_add($customer_id) {
-		$this->load->model('sale/customer');
-		$customer = $this->model_sale_customer->getCustomer($customer_id);
+	public function on_customer_add($route, $data, $customer_id) {
+		$customer = $data[0];
 		$settings = $this->config->get('module_getresponse_reg');
 
 		if ($settings['sequence_active'] == 0 || $customer['newsletter'] == 0) {
-			return true;
+			return;
 		}
 
 		$customs = array();
@@ -503,6 +503,6 @@ class ControllerExtensionModuleGetresponse extends Controller
 
 		$this->get_response->addContact($params);
 
-		return true;
+		return $customer_id;
 	}
 }

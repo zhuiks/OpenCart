@@ -25,7 +25,7 @@ class ControllerExtensionModuleGetresponse extends Controller
 
 
 		if ($settings['active'] == 0 || $customer['newsletter'] == 0) {
-			return $customer_id;
+			return;
 		}
 
 		$get_response = new GetResponseApiV3($apikey);
