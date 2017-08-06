@@ -53,7 +53,7 @@ class ControllerExtensionModuleGetresponse extends Controller
 	}
 
 	private function assignAutoresponders($data) {
-		$autoresponders = $this->get_response->getAutoresponders();
+		$autoresponders = (array) $this->get_response->getAutoresponders();
 		$data['campaign_days'] = array();
 
 		if (isset($autoresponders->httpStatus) && $autoresponders->httpStatus != 200) {
@@ -62,18 +62,16 @@ class ControllerExtensionModuleGetresponse extends Controller
 			return $data;
 		}
 
-		if (is_object($autoresponders) && !empty((array)$autoresponders)) {
-			foreach ($autoresponders as $autoresponder) {
-				if ($autoresponder->triggerSettings->dayOfCycle == null) {
-					continue;
-				}
-
-				$data['campaign_days'][$autoresponder->triggerSettings->subscribedCampaign->campaignId][$autoresponder->triggerSettings->dayOfCycle] = array(
-						'day' => $autoresponder->triggerSettings->dayOfCycle,
-						'name' => $autoresponder->subject,
-						'status' => $autoresponder->status
-				);
+        	foreach ($autoresponders as $autoresponder) {
+			if ($autoresponder->triggerSettings->dayOfCycle == null) {
+				continue;
 			}
+
+			$data['campaign_days'][$autoresponder->triggerSettings->subscribedCampaign->campaignId][$autoresponder->triggerSettings->dayOfCycle] = array(
+					'day' => $autoresponder->triggerSettings->dayOfCycle,
+					'name' => $autoresponder->subject,
+					'status' => $autoresponder->status
+			);
 		}
 
 		return $data;
@@ -116,17 +114,17 @@ class ControllerExtensionModuleGetresponse extends Controller
 		$data['breadcrumbs'] = array();
 		$data['breadcrumbs'][] = array(
 				'text' => $this->language->get('text_home'),
-				'href' => $this->url->link('common/home', 'token=' . $this->session->data['user_token'], 'SSL'),
+				'href' => $this->url->link('common/home', 'user_token=' . $this->session->data['user_token'], 'SSL'),
 				'separator' => false
 		);
 		$data['breadcrumbs'][] = array(
 				'text' => $this->language->get('text_module'),
-				'href' => $this->url->link('extension/module', 'token=' . $this->session->data['user_token'], 'SSL'),
+				'href' => $this->url->link('extension/module', 'user_token=' . $this->session->data['user_token'], 'SSL'),
 				'separator' => ' :: '
 		);
 		$data['breadcrumbs'][] = array(
 				'text' => $this->language->get('heading_title'),
-				'href' => $this->url->link('extension/module/getresponse', 'token=' . $this->session->data['user_token'], 'SSL'),
+				'href' => $this->url->link('extension/module/getresponse', 'user_token=' . $this->session->data['user_token'], 'SSL'),
 				'separator' => ' :: '
 		);
 
@@ -382,10 +380,10 @@ class ControllerExtensionModuleGetresponse extends Controller
 				}
 
 				try {
-					$r = $this->get_response->addContact($params);
-					if (is_object($r) && empty((array)$r)) {
+					$r = (array) $this->get_response->addContact($params);
+					if (!count($r)) {
 						$queued++;
-					} elseif (is_object($r) && $r->code == 1008) {
+					} elseif (isset($r['code']) && $r['code'] == 1008) {
 						$duplicated++;
 					} else {
 						$not_added++;
